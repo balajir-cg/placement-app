@@ -2,45 +2,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui-custom/page-header"
+import { databases } from "@/lib/appwrite"
+import Image from "next/image"
 
-// Mock data for placed students
-const placedStudents = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    company: "Google",
-    role: "Software Engineer",
-    package: "₹24 LPA",
-    image: "/placeholder.svg?height=40&width=40",
-    content:
-      "Thrilled to announce that I've accepted a Software Engineer role at Google! Thanks to everyone who supported me on this journey.",
-    timestamp: "2 days ago",
-  },
-  {
-    id: 2,
-    name: "Rahul Sharma",
-    company: "Microsoft",
-    role: "Product Manager",
-    package: "₹22 LPA",
-    image: "/placeholder.svg?height=40&width=40",
-    content:
-      "Excited to share that I'll be joining Microsoft as a Product Manager! Grateful for the guidance from my professors and mentors.",
-    timestamp: "1 week ago",
-  },
-  {
-    id: 3,
-    name: "Priya Patel",
-    company: "Amazon",
-    role: "Data Scientist",
-    package: "₹20 LPA",
-    image: "/placeholder.svg?height=40&width=40",
-    content:
-      "I'm happy to announce that I've accepted a Data Scientist position at Amazon! Looking forward to this new chapter.",
-    timestamp: "2 weeks ago",
-  },
-]
-
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const posts = await databases.listDocuments(
+    process.env.NEXT_PUBLIC_DATABASE!,
+    process.env.NEXT_PUBLIC_PLACEMENTPOSTS_COLLECTION!
+  );
+   
+  console.log(posts)
   return (
     <div className="container py-8">
       <PageHeader
@@ -53,38 +24,34 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-semibold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-rose-600">
             Placement Success Stories
           </h2>
-          <div className="grid gap-6">
-            {placedStudents.map((student) => (
-              <Card key={student.id} className="overflow-hidden transition-all hover:shadow-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.documents.map((posts) => (
+              <Card key={posts.id} className="overflow-hidden transition-all hover:shadow-md flex flex-col">
+                <div className="relative w-full pb-full aspect-square">
+                  <Image 
+                    src={posts.image} 
+                    alt={`${posts.name}'s placement success story`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-4">
                     <Avatar>
-                      <AvatarImage src={student.image} alt={student.name} />
-                      <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={posts.image} alt={posts.name} />
+                      <AvatarFallback>{posts.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-lg">{student.name}</CardTitle>
+                      <CardTitle className="text-lg">{posts.name}</CardTitle>
                       <CardDescription>
-                        {student.role} at {student.company} | {student.package}
+                        {posts.role} at {posts.company} | {posts.package}
                       </CardDescription>
                     </div>
-                    <div className="ml-auto text-sm text-muted-foreground">{student.timestamp}</div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p>{student.content}</p>
+                <CardContent className="flex-grow">
+                  <p>{posts.content}</p>
                 </CardContent>
-                <CardFooter className="border-t pt-4 flex justify-between">
-                  <Button variant="ghost" size="sm">
-                    Like
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    Comment
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    Share
-                  </Button>
-                </CardFooter>
               </Card>
             ))}
           </div>
@@ -93,4 +60,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

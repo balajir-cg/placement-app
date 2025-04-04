@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Mock data for blog posts
 const blogPosts = [
   {
     id: 1,
@@ -53,6 +52,7 @@ const blogPosts = [
 ]
 
 export default function BlogPage() {
+  
   return (
     <div className="container py-8">
       <div className="mb-8">
