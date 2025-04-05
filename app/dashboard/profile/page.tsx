@@ -1,42 +1,156 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { useAuth } from "@/contexts/auth-context"
+import { toast } from "@/components/ui/use-toast"
+import { ProfileImageUpload } from "@/components/profile-image-upload"
+import { FileText, Download, Eye } from "lucide-react"
+import Link from "next/link"
 
-// Mock user data
-const mockUser = {
-  name: "John Doe",
-  email: "john.doe@example.com",
-  rollNumber: "CS2023001",
-  department: "Computer Science",
-  cgpa: "8.7",
-  batch: "2023-2027",
+// Mock data for profile
+const mockProfileData = {
   about:
-    "Final year Computer Science student passionate about web development and machine learning. Looking for opportunities in software development.",
+    "I am a passionate student interested in technology and innovation. I have experience in web development and machine learning.",
   skills: ["JavaScript", "React", "Node.js", "Python", "Machine Learning"],
   links: {
     github: "https://github.com/johndoe",
     linkedin: "https://linkedin.com/in/johndoe",
     leetcode: "https://leetcode.com/johndoe",
   },
-  resume: "/path/to/resume.pdf",
-  semesterSheets: [
-    { semester: 1, url: "/path/to/sem1.pdf" },
-    { semester: 2, url: "/path/to/sem2.pdf" },
-    { semester: 3, url: "/path/to/sem3.pdf" },
-    { semester: 4, url: "/path/to/sem4.pdf" },
+  resumeUrl: "#",
+  documents: [
+    {
+      id: "1",
+      type: "Semester 1 Marksheet",
+      name: "sem1_marksheet.pdf",
+      url: "#",
+      verified: true,
+      uploadedAt: "2023-05-15T10:30:00Z",
+    },
+    {
+      id: "2",
+      type: "Semester 2 Marksheet",
+      name: "sem2_marksheet.pdf",
+      url: "#",
+      verified: false,
+      uploadedAt: "2023-12-20T14:45:00Z",
+    },
+    {
+      id: "3",
+      type: "10th Certificate",
+      name: "10th_certificate.pdf",
+      url: "#",
+      verified: true,
+      uploadedAt: "2022-08-10T09:15:00Z",
+    },
   ],
 }
 
 export default function ProfilePage() {
-  const [user] = useState(mockUser)
+  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [profileData, setProfileData] = useState(mockProfileData)
+
+  const handleSaveProfile = async () => {
+    if (!user) return
+
+    try {
+      setIsSaving(true)
+
+      // Mock API call - in a real app, this would call your backend
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      })
+
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const skillsString = e.target.value
+    const skillsArray = skillsString
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean)
+    setProfileData((prev) => ({ ...prev, skills: skillsArray }))
+  }
+
+  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target
+    setProfileData((prev) => ({
+      ...prev,
+      links: {
+        ...prev.links,
+        [id.replace("link-", "")]: value,
+      },
+    }))
+  }
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>, semester: string) => {
+    if (!e.target.files || e.target.files.length === 0) return
+
+    try {
+      const file = e.target.files[0]
+
+      toast({
+        title: "Uploading document",
+        description: "Please wait while we upload your document...",
+      })
+
+      // Mock upload - in a real app, this would call your backend
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Add new document to the list
+      const newDoc = {
+        id: Math.random().toString(36).substring(7),
+        type: `Semester ${semester} Marksheet`,
+        name: file.name,
+        url: "#",
+        verified: false,
+        uploadedAt: new Date().toISOString(),
+      }
+
+      setProfileData((prev) => ({
+        ...prev,
+        documents: [...prev.documents, newDoc],
+      }))
+
+      toast({
+        title: "Document uploaded",
+        description: "Your document has been uploaded successfully.",
+      })
+    } catch (error) {
+      console.error("Error uploading document:", error)
+      toast({
+        title: "Error",
+        description: "Failed to upload document. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (!user) return null
 
   return (
     <div className="container py-8">
@@ -55,51 +169,64 @@ export default function ProfilePage() {
               <CardTitle>Personal Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col items-center space-y-3 pb-4">
-                <div className="h-24 w-24 rounded-full overflow-hidden bg-muted">
-                  <img
-                    src="/placeholder.svg?height=96&width=96"
-                    alt={user.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="text-center">
-                  <h3 className="font-medium text-lg">{user.name}</h3>
-                  <p className="text-sm text-muted-foreground">{user.department}</p>
-                </div>
-              </div>
+              <ProfileImageUpload currentImage={user.avatarUrl} userName={user.name} />
 
-              <div className="space-y-2">
+              <div className="space-y-2 pt-4">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Email:</span>
                   <span className="text-sm text-muted-foreground">{user.email}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Roll Number:</span>
-                  <span className="text-sm text-muted-foreground">{user.rollNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">CGPA:</span>
-                  <span className="text-sm text-muted-foreground">{user.cgpa}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Batch:</span>
-                  <span className="text-sm text-muted-foreground">{user.batch}</span>
-                </div>
+                {user.role === "student" && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">Roll Number:</span>
+                      <span className="text-sm text-muted-foreground">{user.rollNumber || "Not set"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">CGPA:</span>
+                      <span className="text-sm text-muted-foreground">{user.cgpa || "Not set"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">Batch:</span>
+                      <span className="text-sm text-muted-foreground">{user.batch || "Not set"}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="space-y-2 pt-2">
                 <h4 className="text-sm font-medium">External Profiles</h4>
                 <div className="flex flex-col space-y-2">
-                  <Link href={user.links.github} target="_blank" className="text-sm text-blue-600 hover:underline">
-                    GitHub Profile
-                  </Link>
-                  <Link href={user.links.linkedin} target="_blank" className="text-sm text-blue-600 hover:underline">
-                    LinkedIn Profile
-                  </Link>
-                  <Link href={user.links.leetcode} target="_blank" className="text-sm text-blue-600 hover:underline">
-                    LeetCode Profile
-                  </Link>
+                  {profileData.links.github && (
+                    <Link
+                      href={profileData.links.github}
+                      target="_blank"
+                      className="text-sm text-rose-500 hover:underline"
+                    >
+                      GitHub Profile
+                    </Link>
+                  )}
+                  {profileData.links.linkedin && (
+                    <Link
+                      href={profileData.links.linkedin}
+                      target="_blank"
+                      className="text-sm text-rose-500 hover:underline"
+                    >
+                      LinkedIn Profile
+                    </Link>
+                  )}
+                  {profileData.links.leetcode && (
+                    <Link
+                      href={profileData.links.leetcode}
+                      target="_blank"
+                      className="text-sm text-rose-500 hover:underline"
+                    >
+                      LeetCode Profile
+                    </Link>
+                  )}
+                  {!profileData.links.github && !profileData.links.linkedin && !profileData.links.leetcode && (
+                    <span className="text-sm text-muted-foreground">No external profiles added</span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -120,7 +247,16 @@ export default function ProfilePage() {
                   <CardTitle>About Me</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isEditing ? <Textarea defaultValue={user.about} className="min-h-[150px]" /> : <p>{user.about}</p>}
+                  {isEditing ? (
+                    <Textarea
+                      value={profileData.about}
+                      onChange={(e) => setProfileData((prev) => ({ ...prev, about: e.target.value }))}
+                      className="min-h-[150px]"
+                      placeholder="Write a brief description about yourself, your interests, and career goals."
+                    />
+                  ) : (
+                    <p>{profileData.about || "No information provided yet."}</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -132,18 +268,27 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <div className="space-y-2">
                       <Label htmlFor="skills">Skills (comma separated)</Label>
-                      <Input id="skills" defaultValue={user.skills.join(", ")} />
+                      <Input
+                        id="skills"
+                        value={profileData.skills.join(", ")}
+                        onChange={handleSkillsChange}
+                        placeholder="JavaScript, React, Node.js, Python, Machine Learning"
+                      />
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {user.skills.map((skill, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                        >
-                          {skill}
-                        </span>
-                      ))}
+                      {profileData.skills.length > 0 ? (
+                        profileData.skills.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          >
+                            {skill}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No skills added yet.</p>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -157,37 +302,76 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <div className="space-y-4">
                       <div className="grid gap-2">
-                        <Label htmlFor="github">GitHub URL</Label>
-                        <Input id="github" defaultValue={user.links.github} />
+                        <Label htmlFor="link-github">GitHub URL</Label>
+                        <Input
+                          id="link-github"
+                          value={profileData.links.github}
+                          onChange={handleLinkChange}
+                          placeholder="https://github.com/username"
+                        />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="linkedin">LinkedIn URL</Label>
-                        <Input id="linkedin" defaultValue={user.links.linkedin} />
+                        <Label htmlFor="link-linkedin">LinkedIn URL</Label>
+                        <Input
+                          id="link-linkedin"
+                          value={profileData.links.linkedin}
+                          onChange={handleLinkChange}
+                          placeholder="https://linkedin.com/in/username"
+                        />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="leetcode">LeetCode URL</Label>
-                        <Input id="leetcode" defaultValue={user.links.leetcode} />
+                        <Label htmlFor="link-leetcode">LeetCode URL</Label>
+                        <Input
+                          id="link-leetcode"
+                          value={profileData.links.leetcode}
+                          onChange={handleLinkChange}
+                          placeholder="https://leetcode.com/username"
+                        />
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">GitHub:</span>
-                        <Link href={user.links.github} target="_blank" className="text-blue-600 hover:underline">
-                          {user.links.github.replace("https://", "")}
-                        </Link>
+                        {profileData.links.github ? (
+                          <Link
+                            href={profileData.links.github}
+                            target="_blank"
+                            className="text-rose-500 hover:underline"
+                          >
+                            {profileData.links.github.replace("https://", "")}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">Not provided</span>
+                        )}
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">LinkedIn:</span>
-                        <Link href={user.links.linkedin} target="_blank" className="text-blue-600 hover:underline">
-                          {user.links.linkedin.replace("https://", "")}
-                        </Link>
+                        {profileData.links.linkedin ? (
+                          <Link
+                            href={profileData.links.linkedin}
+                            target="_blank"
+                            className="text-rose-500 hover:underline"
+                          >
+                            {profileData.links.linkedin.replace("https://", "")}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">Not provided</span>
+                        )}
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium">LeetCode:</span>
-                        <Link href={user.links.leetcode} target="_blank" className="text-blue-600 hover:underline">
-                          {user.links.leetcode.replace("https://", "")}
-                        </Link>
+                        {profileData.links.leetcode ? (
+                          <Link
+                            href={profileData.links.leetcode}
+                            target="_blank"
+                            className="text-rose-500 hover:underline"
+                          >
+                            {profileData.links.leetcode.replace("https://", "")}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">Not provided</span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -196,7 +380,9 @@ export default function ProfilePage() {
 
               {isEditing && (
                 <div className="flex justify-end">
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveProfile} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
                 </div>
               )}
             </TabsContent>
@@ -208,54 +394,41 @@ export default function ProfilePage() {
                   <CardDescription>Upload and manage your resume</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isEditing ? (
-                    <div className="space-y-4">
-                      <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="resume">Upload Resume</Label>
-                        <Input id="resume" type="file" />
-                      </div>
-                      <Button>Upload</Button>
+                  <div className="space-y-4">
+                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                      <Label htmlFor="resume">Upload Resume</Label>
+                      <Input id="resume" type="file" accept=".pdf,.doc,.docx" />
+                      <p className="text-xs text-muted-foreground">Accepted formats: PDF, DOC, DOCX</p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+
+                    {profileData.resumeUrl && (
+                      <div className="flex items-center justify-between mt-6">
                         <div className="flex items-center space-x-2">
                           <div className="h-10 w-10 flex items-center justify-center bg-muted rounded">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="lucide lucide-file-text"
-                            >
-                              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                              <polyline points="14 2 14 8 20 8" />
-                              <line x1="16" x2="8" y1="13" y2="13" />
-                              <line x1="16" x2="8" y1="17" y2="17" />
-                              <line x1="10" x2="8" y1="9" y2="9" />
-                            </svg>
+                            <FileText className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">Resume.pdf</p>
-                            <p className="text-xs text-muted-foreground">Uploaded on May 10, 2025</p>
+                            <p className="text-sm font-medium">Resume</p>
+                            <p className="text-xs text-muted-foreground">
+                              Last updated: {new Date().toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            View
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={profileData.resumeUrl} target="_blank">
+                              View
+                            </Link>
                           </Button>
-                          <Button variant="outline" size="sm">
-                            Download
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={profileData.resumeUrl} download>
+                              Download
+                            </Link>
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -267,13 +440,13 @@ export default function ProfilePage() {
                   <CardDescription>Upload and manage your semester marksheets</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isEditing ? (
-                    <div className="space-y-4">
-                      <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
                         <Label htmlFor="semester">Semester</Label>
                         <select
                           id="semester"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
                         >
                           <option value="1">Semester 1</option>
                           <option value="2">Semester 2</option>
@@ -285,54 +458,55 @@ export default function ProfilePage() {
                           <option value="8">Semester 8</option>
                         </select>
                       </div>
-                      <div className="grid w-full max-w-sm items-center gap-1.5">
+                      <div className="grid w-full items-center gap-1.5">
                         <Label htmlFor="marksheet">Upload Marksheet</Label>
-                        <Input id="marksheet" type="file" />
+                        <Input
+                          id="marksheet"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const semester = (document.getElementById("semester") as HTMLSelectElement).value
+                            handleDocumentUpload(e, semester)
+                          }}
+                        />
                       </div>
-                      <Button>Upload</Button>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {user.semesterSheets.map((sheet) => (
-                        <div key={sheet.semester} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-10 w-10 flex items-center justify-center bg-muted rounded">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="lucide lucide-file-text"
-                              >
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="16" x2="8" y1="13" y2="13" />
-                                <line x1="16" x2="8" y1="17" y2="17" />
-                                <line x1="10" x2="8" y1="9" y2="9" />
-                              </svg>
+
+                    <div className="space-y-4 mt-6">
+                      {profileData.documents.length > 0 ? (
+                        profileData.documents.map((doc, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-md">
+                            <div className="flex items-center space-x-2">
+                              <div className="h-10 w-10 flex items-center justify-center bg-muted rounded">
+                                <FileText className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">{doc.type}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              {doc.verified && (
+                                <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-500/10 text-green-500 border-green-500/20">
+                                  Verified
+                                </span>
+                              )}
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">Semester {sheet.semester} Marksheet</p>
-                              <p className="text-xs text-muted-foreground">Uploaded on May 10, 2025</p>
+                            <div className="flex space-x-2">
+                              <Button variant="outline" size="sm" className="flex items-center">
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Button>
+                              <Button variant="outline" size="sm" className="flex items-center">
+                                <Download className="h-4 w-4 mr-1" /> Download
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              View
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Download
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No documents uploaded yet.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -342,4 +516,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-

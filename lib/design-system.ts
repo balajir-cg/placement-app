@@ -19,4 +19,3 @@ export { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Export utility functions
 export { cn } from "@/lib/utils"
-

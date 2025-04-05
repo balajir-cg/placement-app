@@ -29,7 +29,7 @@ const placedStudents = [
   },
   {
     id: 3,
-    name: "Priya Patel",
+    name: " Patel",
     company: "Amazon",
     role: "Data Scientist",
     package: "₹20 LPA",
@@ -93,4 +93,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

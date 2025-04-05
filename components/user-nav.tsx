@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/contexts/auth-context"
 
 interface UserNavProps {
   user: {
@@ -24,11 +24,10 @@ interface UserNavProps {
 }
 
 export function UserNav({ user }: UserNavProps) {
-  const router = useRouter()
+  const { signOut } = useAuth()
 
-  const handleSignOut = () => {
-    // In a real app, we would sign out the user here
-    router.push("/")
+  const handleSignOut = async () => {
+    await signOut()
   }
 
   return (
@@ -64,4 +63,3 @@ export function UserNav({ user }: UserNavProps) {
     </DropdownMenu>
   )
 }
-

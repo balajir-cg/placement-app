@@ -9,17 +9,46 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAuth } from "@/contexts/auth-context"
+import { toast } from "@/components/ui/use-toast"
 
 export default function SignInPage() {
   const router = useRouter()
-  const [userRole, setUserRole] = useState("student")
+  const { signIn } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target
+    setFormData((prev) => ({ ...prev, [id]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, we would authenticate the user here
-    // For now, we'll just redirect to the home page based on role
-    router.push("/dashboard")
+
+    try {
+      setIsLoading(true)
+
+      await signIn(formData.email, formData.password)
+
+      toast({
+        title: "Signed in successfully",
+        description: "Welcome back to CampusConnect!",
+      })
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      toast({
+        title: "Error signing in",
+        description: "Invalid email or password. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -31,36 +60,36 @@ export default function SignInPage() {
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Sign in</CardTitle>
-            <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
+            <CardDescription className="text-center">
+              Enter your credentials to access your account
+              <div className="mt-2 text-xs text-muted-foreground">
+                <div>Student: student@example.com / password</div>
+                <div>Placement Officer: po@example.com / password</div>
+                <div>Placement Rep: pr@example.com / password</div>
+              </div>
+            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Sign in as</Label>
-                <Select value={userRole} onValueChange={setUserRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="pr">Placement Representative</SelectItem>
-                    <SelectItem value="po">Placement Officer</SelectItem>
-                    <SelectItem value="recruiter">Recruiter</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input id="password" type="password" required value={formData.password} onChange={handleChange} />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col">
-              <Button type="submit" className="w-full">
-                Sign in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign in"}
               </Button>
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
